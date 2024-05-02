@@ -1,10 +1,9 @@
+import tkinter as tk
+from tkinter import messagebox
 import matplotlib
-matplotlib.use('gtk4agg')
-import gi
-gi.require_version('Gtk', '4.0')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from gi.repository import Gtk, GLib, GObject
 
 # Define process class
 class Process:
@@ -71,68 +70,38 @@ class PriorityScheduler:
         plt.show()
 
 # Define the GUI
-class SchedulerGUI(Gtk.Application):
+class SchedulerGUI(tk.Tk):
     def __init__(self):
-        super().__init__(application_id="com.example.priorityscheduler")
+        super().__init__()
 
-        # Processes list
+        self.title("ELZowzat Scheduling Project")
+        self.geometry("400x300")
+
         self.processes = []
 
-        # Set up the application window
-        self.connect("activate", self.on_activate)
-        
-    def on_activate(self, app):
-        # Create the main window
-        self.window = Gtk.ApplicationWindow(application=app)
-        self.window.set_title("Priority Scheduler")
-        self.window.set_default_size(400, 300)
-        
-        # Create the vertical box to hold widgets
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.window.set_child(vbox)
+        # GUI widgets
+        self.label_processes = tk.Label(self, text="# Number of Processes want to Enter:")
+        self.label_processes.pack()
 
-        # Create entry widgets for input
-        self.entry_processes = Gtk.Entry()
-        self.entry_processes.set_placeholder_text("Number of Processes")
-        vbox.append(self.entry_processes)
-        
-        # Add processes button
-        button_add_processes = Gtk.Button(label="Add Processes")
-        button_add_processes.connect("clicked", self.on_add_processes)
-        vbox.append(button_add_processes)
+        self.entry_processes = tk.Entry(self)
+        self.entry_processes.pack()
 
-        # Run scheduler button
-        button_run = Gtk.Button(label="Run Scheduler")
-        button_run.connect("clicked", self.on_run_scheduler)
-        vbox.append(button_run)
+        self.button_add_processes = tk.Button(self, text="Add Processes", command=self.add_processes)
+        self.button_add_processes.pack()
 
-        # Show Gantt Chart button
-        button_show_gantt = Gtk.Button(label="Show Gantt Chart")
-        button_show_gantt.connect("clicked", self.on_show_gantt_chart)
-        vbox.append(button_show_gantt)
+        self.button_run = tk.Button(self, text="Run Scheduler", command=self.run_scheduler)
+        self.button_run.pack()
 
-        # Show results in a text view
-        self.textview_results = Gtk.TextView()
-        vbox.append(self.textview_results)
+        self.button_show_gantt = tk.Button(self, text="Show Gantt Chart", command=self.show_gantt_chart)
+        self.button_show_gantt.pack()
 
-
-
-
-    def on_add_processes(self, button):
+    def add_processes(self):
         try:
-            num_processes = int(self.entry_processes.get_text())
+            num_processes = int(self.entry_processes.get())
             if num_processes <= 0:
                 raise ValueError("Number of processes must be positive.")
         except ValueError as e:
-            dialog = Gtk.MessageDialog(
-                transient_for=self.window,
-                flags=0,
-                message_type=Gtk.MessageType.ERROR,
-                buttons=Gtk.ButtonsType.CLOSE,
-                text=str(e),
-            )
-            dialog.run()
-            dialog.destroy()
+            messagebox.showerror("Invalid Input", str(e))
             return
         
         self.processes = []
@@ -153,41 +122,17 @@ class SchedulerGUI(Gtk.Application):
                 if burst_time <= 0:
                     raise ValueError("Burst time must be positive.")
             except ValueError as e:
-                dialog = Gtk.MessageDialog(
-                    transient_for=self.window,
-                    flags=0,
-                    message_type=Gtk.MessageType.ERROR,
-                    buttons=Gtk.ButtonsType.CLOSE,
-                    text=str(e),
-                )
-                dialog.run()
-                dialog.destroy()
+                messagebox.showerror("Invalid Input", str(e))
                 return
 
             process = Process(pid, priority, arrival_time, burst_time)
             self.processes.append(process)
 
-        dialog = Gtk.MessageDialog(
-            transient_for=self.window,
-            flags=0,
-            message_type=Gtk.MessageType.INFO,
-            buttons=Gtk.ButtonsType.OK,
-            text="Processes added successfully!",
-        )
-        dialog.run()
-        dialog.destroy()
+        messagebox.showinfo("Processes Added", "Processes added successfully!")
 
-    def on_run_scheduler(self, button):
+    def run_scheduler(self):
         if not self.processes:
-            dialog = Gtk.MessageDialog(
-                transient_for=self.window,
-                flags=0,
-                message_type=Gtk.MessageType.ERROR,
-                buttons=Gtk.ButtonsType.CLOSE,
-                text="No processes to schedule.",
-            )
-            dialog.run()
-            dialog.destroy()
+            messagebox.showerror("No Processes", "No processes to schedule.")
             return
 
         scheduler = PriorityScheduler()
@@ -212,27 +157,18 @@ class SchedulerGUI(Gtk.Application):
             f"Average Response Time: {scheduler.avg_response_time:.2f}\n"
         )
 
-        # Display results in the text view
-        text_buffer = self.textview_results.get_buffer()
-        text_buffer.set_text("\n".join(results))
+        messagebox.showinfo("Scheduling Results", "\n".join(results))
 
         self.scheduler = scheduler
 
-    def on_show_gantt_chart(self, button):
+    def show_gantt_chart(self):
         if hasattr(self, 'scheduler') and self.scheduler.processes:
             self.scheduler.plot_gantt_chart()
+            
         else:
-            dialog = Gtk.MessageDialog(
-                transient_for=self.window,
-                flags=0,
-                message_type=Gtk.MessageType.ERROR,
-                buttons=Gtk.ButtonsType.CLOSED,
-                text="Run the scheduler first.",
-            )
-            dialog.run()
-            dialog.destroy()
+            messagebox.showerror("No Scheduler", "Run the scheduler first.")
 
 # Run the GUI
 if __name__ == "__main__":
-    app = SchedulerGUI()
-    app.run()
+    gui = SchedulerGUI()
+    gui.mainloop()
